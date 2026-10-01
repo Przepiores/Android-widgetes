@@ -10,6 +10,7 @@ object WidgetRefresher {
      * nie wystarczy, bo przy działającej sesji Glance nie wczytałby danych od nowa.
      */
     suspend fun refreshAll(context: Context) {
+        WeatherRepository.refreshIfStale(context)
         val widget = BatteryWidget()
         GlanceAppWidgetManager(context).getGlanceIds(BatteryWidget::class.java).forEach { id ->
             updateAppWidgetState(context, id) { it[WidgetStyle.TICK] = System.currentTimeMillis() }

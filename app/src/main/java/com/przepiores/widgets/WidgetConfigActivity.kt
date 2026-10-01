@@ -200,24 +200,24 @@ private fun WidgetPreview(s: WidgetStyle) {
         ) {
             PreviewRing(72, R.drawable.ic_phone, s)
             PreviewRing(15, R.drawable.ic_headphones, s)
-            PreviewHotspot(s)
+            PreviewWeather(s)
         }
     }
 }
 
 @Composable
-private fun PreviewHotspot(s: WidgetStyle) {
+private fun PreviewWeather(s: WidgetStyle) {
     val cs = MaterialTheme.colorScheme
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
-            modifier = Modifier.size(56.dp).clip(CircleShape).background(cs.primary),
+            modifier = Modifier.size(56.dp).clip(CircleShape).background(cs.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(painterResource(R.drawable.ic_hotspot), contentDescription = null, tint = cs.onPrimary, modifier = Modifier.size(24.dp))
+            Icon(painterResource(R.drawable.ic_w_partly), contentDescription = null, tint = cs.onSecondaryContainer, modifier = Modifier.size(28.dp))
         }
         Spacer(Modifier.height(3.dp))
         Text(
-            "wł.",
+            "14°",
             color = cs.onSurface,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,

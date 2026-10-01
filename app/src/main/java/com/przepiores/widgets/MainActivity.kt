@@ -34,7 +34,20 @@ class MainActivity : Activity() {
             text = "Kalendarz (następne wydarzenie)"
             setOnClickListener { requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 2) }
         })
+        root.addView(Button(this).apply {
+            text = "Lokalizacja (pogoda)"
+            setOnClickListener { requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 3) }
+        })
         setContentView(root)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Na pierwszym planie lokalizacja jest dostępna; odśwież pogodę od razu.
+        CoroutineScope(Dispatchers.Default).launch {
+            WeatherRepository.refreshIfStale(applicationContext, force = true)
+            WidgetRefresher.refreshAll(applicationContext)
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
