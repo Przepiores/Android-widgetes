@@ -20,6 +20,7 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -163,12 +164,32 @@ class BatteryWidget : GlanceAppWidget() {
                     modifier = GlanceModifier.size(ring * 0.4f),
                     colorFilter = ColorFilter.tint(accent),
                 )
+                if (b.charging) ChargingBadge(ring)
             }
             Spacer(GlanceModifier.height(3.dp))
             Text(
-                text = (b.percent?.let { "$it%" } ?: "--") + if (b.charging) "⚡" else "",
+                text = b.percent?.let { "$it%" } ?: "--",
                 style = mono(s, 13f, c.onSurface, FontWeight.Bold),
             )
+        }
+    }
+
+    /** Kółko w kolorze primary z błyskawicą, w prawym dolnym rogu pierścienia. */
+    @Composable
+    private fun ChargingBadge(ring: Dp) {
+        val c = GlanceTheme.colors
+        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
+            Box(
+                modifier = GlanceModifier.size(ring * 0.38f).cornerRadius(ring * 0.19f).background(c.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_bolt),
+                    contentDescription = "ładuje się",
+                    modifier = GlanceModifier.size(ring * 0.26f),
+                    colorFilter = ColorFilter.tint(c.onPrimary),
+                )
+            }
         }
     }
 
