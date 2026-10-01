@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -198,9 +199,30 @@ private fun WidgetPreview(s: WidgetStyle) {
             horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             PreviewRing(72, R.drawable.ic_phone, s)
-            PreviewRing(90, R.drawable.ic_headphones, s)
-            PreviewRing(15, R.drawable.ic_watch, s)
+            PreviewRing(15, R.drawable.ic_headphones, s)
+            PreviewHotspot(s)
         }
+    }
+}
+
+@Composable
+private fun PreviewHotspot(s: WidgetStyle) {
+    val cs = MaterialTheme.colorScheme
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier.size(56.dp).clip(CircleShape).background(cs.primary),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(R.drawable.ic_hotspot), contentDescription = null, tint = cs.onPrimary, modifier = Modifier.size(24.dp))
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            "wł.",
+            color = cs.onSurface,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            fontSize = (13 * s.text.scale).sp,
+        )
     }
 }
 

@@ -15,8 +15,10 @@ import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalSize
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -50,13 +52,16 @@ data class WidgetData(
     val batteries: List<BatteryInfo>,
     val event: NextEvent?,
     val alarm: String?,
+    val hotspot: Boolean?,
 ) {
     companion object {
         fun load(context: Context) = WidgetData(
+            // Zegarki zastępuje przycisk hotspotu.
             batteries = listOf(BatteryRepository.phone(context)) +
-                BatteryRepository.bluetoothDevices(context),
+                BatteryRepository.bluetoothDevices(context).filter { it.kind != DeviceKind.WATCH },
             event = CalendarRepository.next(context),
             alarm = AlarmRepository.next(context),
+            hotspot = HotspotRepository.isEnabled(context),
         )
     }
 }
@@ -88,12 +93,12 @@ class BatteryWidget : GlanceAppWidget() {
                 when {
                     size.width < MEDIUM.width -> SmallBody(d.batteries.first(), s)
                     size.height < LARGE.height -> {
-                        RingsRow(d.batteries.take(3), s, ring = 44.dp)
+                        RingsRow(d.batteries.take(2), d.hotspot, s, ring = 44.dp)
                         Spacer(GlanceModifier.defaultWeight())
                         InfoLine(d, s, withAlarm = true)
                     }
                     else -> {
-                        RingsRow(d.batteries.take(4), s, ring = 60.dp)
+                        RingsRow(d.batteries.take(3), d.hotspot, s, ring = 60.dp)
                         Spacer(GlanceModifier.height(6.dp))
                         InfoLine(d, s, withAlarm = false)
                         Spacer(GlanceModifier.defaultWeight())
@@ -125,7 +130,7 @@ class BatteryWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun RingsRow(items: List<BatteryInfo>, s: WidgetStyle, ring: Dp) {
+    private fun RingsRow(items: List<BatteryInfo>, hotspot: Boolean?, s: WidgetStyle, ring: Dp) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -135,6 +140,45 @@ class BatteryWidget : GlanceAppWidget() {
                     Ring(b, s, ring)
                 }
             }
+            Box(modifier = GlanceModifier.defaultWeight(), contentAlignment = Alignment.Center) {
+                HotspotButton(hotspot, s, ring)
+            }
+        }
+    }
+
+    /**
+     * Okrągły przycisk tej samej wielkości co pierścień. Włączony: kółko w kolorze
+     * primary; wyłączony lub nieznany stan: stonowane kółko. Klik otwiera ustawienia.
+     */
+    @Composable
+    private fun HotspotButton(on: Boolean?, s: WidgetStyle, ring: Dp) {
+        val c = GlanceTheme.colors
+        val active = on == true
+        Column(
+            modifier = GlanceModifier.clickable(actionStartActivity<HotspotActivity>()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = GlanceModifier.size(ring).cornerRadius(ring / 2)
+                    .background(if (active) c.primary else c.secondaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_hotspot),
+                    contentDescription = "Hotspot",
+                    modifier = GlanceModifier.size(ring * 0.42f),
+                    colorFilter = ColorFilter.tint(if (active) c.onPrimary else c.onSecondaryContainer),
+                )
+            }
+            Spacer(GlanceModifier.height(3.dp))
+            Text(
+                text = when (on) {
+                    true -> "wł."
+                    false -> "wył."
+                    null -> "hotspot"
+                },
+                style = mono(s, 13f, c.onSurface, FontWeight.Bold),
+            )
         }
     }
 
