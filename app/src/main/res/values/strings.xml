@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Widgety baterii</string>
-    <string name="widget_description">Bateria telefonu, słuchawek i zegarka Garmin oraz przełącznik trybów</string>
+    <string name="widget_description">Bateria telefonu i słuchawek z czasem do naładowania, następne wydarzenie i budzik</string>
 </resources>
