@@ -18,32 +18,34 @@ data class Weather(val tempC: Int, val icon: Int, val label: String)
 /**
  * Pogoda z Open-Meteo (bez klucza API). Wynik i ostatnia lokalizacja są w
  * SharedPreferences: widget czyta tylko pamięć podręczną, a sieć odpytuje
- * WidgetRefresher najwyżej co 30 minut.
+ * RefreshWorker (i otwarcie aplikacji) najwyżej co 30 minut.
  */
 object WeatherRepository {
     private const val PREFS = "weather"
     private const val MAX_AGE_MS = 30 * 60 * 1000L
 
+    private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
     fun cached(context: Context): Weather? {
-        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val p = prefs(context)
         if (!p.contains("temp")) return null
         return describe(p.getFloat("temp", 0f), p.getInt("code", 0), p.getBoolean("day", true))
     }
 
-    /** Zapamiętuje lokalizację; wołane z aplikacji (na pierwszym planie) i przy odświeżaniu. */
+    /** Zapamiętuje lokalizację; wołane z aplikacji (na pierwszym planie) i przed pobraniem pogody. */
     fun rememberLocation(context: Context) {
         val loc = lastKnown(context) ?: return
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        prefs(context).edit()
             .putFloat("lat", loc.latitude.toFloat())
             .putFloat("lon", loc.longitude.toFloat())
             .apply()
     }
 
-    suspend fun refreshIfStale(context: Context, force: Boolean = false) = withContext(Dispatchers.IO) {
+    suspend fun refreshIfStale(context: Context) = withContext(Dispatchers.IO) {
+        val p = prefs(context)
+        if (System.currentTimeMillis() - p.getLong("time", 0) < MAX_AGE_MS) return@withContext
         rememberLocation(context)
-        val p = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (!p.contains("lat")) return@withContext
-        if (!force && System.currentTimeMillis() - p.getLong("time", 0) < MAX_AGE_MS) return@withContext
         try {
             val url = String.format(
                 Locale.US,
@@ -86,7 +88,6 @@ object WeatherRepository {
         val (icon, label) = when (code) {
             0 -> (if (day) R.drawable.ic_w_sun else R.drawable.ic_w_moon) to "bezchmurnie"
             1, 2 -> R.drawable.ic_w_partly to "małe zachmurzenie"
-            3 -> R.drawable.ic_w_cloud to "pochmurno"
             45, 48 -> R.drawable.ic_w_fog to "mgła"
             in 51..67, in 80..82 -> R.drawable.ic_w_rain to "deszcz"
             in 71..77, 85, 86 -> R.drawable.ic_w_snow to "śnieg"

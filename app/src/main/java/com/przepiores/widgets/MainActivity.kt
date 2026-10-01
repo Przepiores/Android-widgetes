@@ -43,16 +43,12 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        // Na pierwszym planie lokalizacja jest dostępna; odśwież pogodę od razu.
+        // Na pierwszym planie lokalizacja jest dostępna: zapamiętaj ją. Obejmuje też
+        // powrót z okna uprawnień, więc nowe dane pojawiają się od razu.
         CoroutineScope(Dispatchers.Default).launch {
-            WeatherRepository.refreshIfStale(applicationContext, force = true)
+            WeatherRepository.rememberLocation(applicationContext)
+            WeatherRepository.refreshIfStale(applicationContext)
             WidgetRefresher.refreshAll(applicationContext)
         }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        // Pokaż nowe dane od razu, bez czekania na kolejne odświeżenie.
-        CoroutineScope(Dispatchers.Default).launch { WidgetRefresher.refreshAll(applicationContext) }
     }
 }

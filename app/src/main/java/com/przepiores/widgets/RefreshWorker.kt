@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class RefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
+        WeatherRepository.refreshIfStale(applicationContext)
         WidgetRefresher.refreshAll(applicationContext)
         return Result.success()
     }
