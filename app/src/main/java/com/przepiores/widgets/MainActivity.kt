@@ -2,9 +2,7 @@ package com.przepiores.widgets
 
 import android.Manifest
 import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
-import android.provider.Settings
 import android.view.Gravity
 import android.widget.Button
 import android.widget.LinearLayout
@@ -29,13 +27,9 @@ class MainActivity : Activity() {
             setOnClickListener { requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1) }
         })
         root.addView(Button(this).apply {
-            text = "Dostęp do Nie przeszkadzać (tryby)"
-            setOnClickListener { startActivity(Intent(ACTION_POLICY_SETTINGS)) }
+            text = "Kalendarz (następne wydarzenie)"
+            setOnClickListener { requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 2) }
         })
         setContentView(root)
-    }
-
-    companion object {
-        const val ACTION_POLICY_SETTINGS = Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS
     }
 }

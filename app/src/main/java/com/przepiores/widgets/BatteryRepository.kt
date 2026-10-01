@@ -9,7 +9,12 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.BatteryManager
 
-data class BatteryInfo(val label: String, val percent: Int?, val charging: Boolean = false)
+data class BatteryInfo(
+    val label: String,
+    val percent: Int?,
+    val charging: Boolean = false,
+    val remainingMs: Long? = null,
+)
 
 object BatteryRepository {
 
@@ -21,7 +26,7 @@ object BatteryRepository {
         val charging = status == BatteryManager.BATTERY_STATUS_CHARGING ||
             status == BatteryManager.BATTERY_STATUS_FULL
         val pct = if (level >= 0 && scale > 0) level * 100 / scale else null
-        return BatteryInfo("Telefon", pct, charging)
+        return BatteryInfo("Telefon", pct, charging, TimeEstimator.remainingMs(context, pct, charging))
     }
 
     /**
@@ -56,6 +61,4 @@ object BatteryRepository {
     } catch (_: Throwable) {
         -1
     }
-
-    fun garmin(context: Context): BatteryInfo = GarminBatteryStore.read(context)
 }
