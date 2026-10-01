@@ -12,6 +12,7 @@ object TimeEstimator {
     private const val PREFS = "samples"
     private const val MAX_SAMPLES = 24
     private const val MIN_SPAN_MS = 20 * 60 * 1000L
+    private const val MIN_SAMPLE_GAP_MS = 5 * 60 * 1000L
 
     /** Zwraca pozostały czas w ms lub null, gdy brak wiarygodnej oceny. */
     fun remainingMs(context: Context, pct: Int?, charging: Boolean): Long? {
@@ -27,8 +28,12 @@ object TimeEstimator {
             .mapNotNull { s -> s.split(',').takeIf { it.size == 2 }?.let { it[0].toLong() to it[1].toInt() } }
         // Po ładowaniu poziom rośnie; zaczynamy serię od nowa.
         if (samples.isNotEmpty() && pct > samples.last().second) samples = emptyList()
-        samples = (samples + (now to pct)).takeLast(MAX_SAMPLES)
-        prefs.edit().putString("s", samples.joinToString(";") { "${it.first},${it.second}" }).apply()
+        // Kilka widgetów odświeża się naraz; nie zapisujemy próbek częściej niż co 5 minut.
+        val last = samples.lastOrNull()
+        if (last == null || last.second != pct || now - last.first >= MIN_SAMPLE_GAP_MS) {
+            samples = (samples + (now to pct)).takeLast(MAX_SAMPLES)
+            prefs.edit().putString("s", samples.joinToString(";") { "${it.first},${it.second}" }).apply()
+        }
 
         val first = samples.first()
         val span = now - first.first
@@ -39,6 +44,6 @@ object TimeEstimator {
 
     fun format(ms: Long): String {
         val min = ms / 60000
-        return if (min >= 60) "${min / 60} h ${min % 60} min" else "$min min"
+        return if (min >= 60) "%dh %02dm".format(min / 60, min % 60) else "${min}m"
     }
 }

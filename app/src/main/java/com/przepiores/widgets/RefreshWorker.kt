@@ -1,7 +1,6 @@
 package com.przepiores.widgets
 
 import android.content.Context
-import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
@@ -11,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class RefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
-        BatteryWidget().updateAll(applicationContext)
+        WidgetRefresher.refreshAll(applicationContext)
         return Result.success()
     }
 
