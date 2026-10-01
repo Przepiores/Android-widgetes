@@ -6,7 +6,7 @@
 
     <application
         android:label="@string/app_name"
-        android:theme="@android:style/Theme.Material.DayNight.NoActionBar">
+        android:theme="@style/Theme.Widgety">
 
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>

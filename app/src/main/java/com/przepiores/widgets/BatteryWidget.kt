@@ -116,7 +116,7 @@ class BatteryWidget : GlanceAppWidget() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Ring(b, s, ring = 52.dp)
+            Ring(b, s, ring = 48.dp)
             b.remainingMs?.let {
                 Text(text = TimeEstimator.format(it), style = mono(s, 11f, GlanceTheme.colors.onSurfaceVariant))
             }

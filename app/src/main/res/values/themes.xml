@@ -1,0 +1,4 @@
+<resources>
+    <!-- DeviceDefault na Androidzie 12+ używa dynamicznych kolorów systemu. -->
+    <style name="Theme.Widgety" parent="android:Theme.DeviceDefault.Light.NoActionBar" />
+</resources>
