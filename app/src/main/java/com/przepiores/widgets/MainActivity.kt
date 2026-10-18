@@ -49,6 +49,7 @@ class MainActivity : Activity() {
             WeatherRepository.rememberLocation(applicationContext)
             WeatherRepository.refreshIfStale(applicationContext)
             WidgetRefresher.refreshAll(applicationContext)
+            WidgetPreviews.publish(applicationContext)
         }
     }
 }

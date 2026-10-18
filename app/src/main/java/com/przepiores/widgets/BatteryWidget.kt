@@ -68,6 +68,15 @@ class BatteryWidget : GlanceAppWidget() {
 
     override val sizeMode = SizeMode.Responsive(setOf(SMALL, MEDIUM, LARGE))
 
+    // Rozmiary renderowane w podglądzie na liście widgetów (Android 15+).
+    override val previewSizeMode = SizeMode.Responsive(setOf(MEDIUM, LARGE))
+
+    /** Podgląd na liście widgetów: prawdziwe dane, domyślny wygląd. */
+    override suspend fun providePreview(context: Context, widgetCategory: Int) {
+        val data = WidgetData.load(context)
+        provideContent { GlanceTheme { Content(data, WidgetStyle()) } }
+    }
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
             val prefs = currentState<Preferences>()
