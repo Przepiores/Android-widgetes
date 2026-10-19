@@ -3,6 +3,7 @@ package com.przepiores.widgets
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -21,6 +22,8 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -34,6 +37,7 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
@@ -43,6 +47,8 @@ private val MEDIUM = DpSize(250.dp, 110.dp)
 private val LARGE = DpSize(250.dp, 220.dp)
 
 private const val LOW_BATTERY = 20
+
+private val SCRIM = ColorProvider(day = Color.White.copy(alpha = 0.55f), night = Color.Black.copy(alpha = 0.42f))
 
 data class WidgetData(
     val batteries: List<BatteryInfo>,
@@ -95,8 +101,8 @@ class BatteryWidget : GlanceAppWidget() {
             modifier = GlanceModifier.fillMaxSize().appWidgetBackground(),
         ) {
             Column(
-                modifier = GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = GlanceModifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.Top,
             ) {
                 when {
                     size.width < MEDIUM.width -> {
@@ -104,17 +110,21 @@ class BatteryWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(8.dp))
                         Bar(phone, s)
                         Spacer(GlanceModifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) { TimeItem(phone, s, short = true) }
+                        if (phone.remainingMs != null) Scrim {
+                            Row(verticalAlignment = Alignment.CenterVertically) { TimeItem(phone, s, short = true) }
+                        }
                     }
                     size.height < LARGE.height -> {
                         BigPercent(phone, s, capDp = 44f)
                         Spacer(GlanceModifier.height(10.dp))
                         Bar(phone, s)
                         Spacer(GlanceModifier.height(10.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TimeItem(phone, s)
-                            WeatherItem(d.weather, s)
-                            d.alarm?.let { Item(R.drawable.ic_alarm, it, s) }
+                        Scrim {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TimeItem(phone, s)
+                                WeatherItem(d.weather, s)
+                                d.alarm?.let { Item(R.drawable.ic_alarm, it, s, last = true) }
+                            }
                         }
                     }
                     else -> {
@@ -122,24 +132,18 @@ class BatteryWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.height(12.dp))
                         Bar(phone, s)
                         Spacer(GlanceModifier.height(12.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TimeItem(phone, s)
-                            WeatherItem(d.weather, s)
-                            d.batteries.drop(1).take(2).forEach { b ->
-                                b.percent?.let { Item(b.kind.icon, "$it%", s) }
+                        Scrim {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                TimeItem(phone, s)
+                                WeatherItem(d.weather, s)
+                                d.batteries.drop(1).take(2).forEach { b ->
+                                    b.percent?.let { Item(b.kind.icon, "$it%", s) }
+                                }
                             }
-                        }
-                        Spacer(GlanceModifier.height(8.dp))
-                        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            d.alarm?.let { Item(R.drawable.ic_alarm, it, s) }
-                            d.event?.let {
-                                ItemIcon(R.drawable.ic_event, s)
-                                Text(
-                                    text = "${it.whenText}  ${it.title}",
-                                    maxLines = 1,
-                                    modifier = GlanceModifier.defaultWeight(),
-                                    style = sans(s, 13.5f),
-                                )
+                            Spacer(GlanceModifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                d.alarm?.let { Item(R.drawable.ic_alarm, it, s) }
+                                d.event?.let { Item(R.drawable.ic_event, "${it.whenText}  ${it.title}", s, last = true) }
                             }
                         }
                     }
@@ -227,12 +231,26 @@ class BatteryWidget : GlanceAppWidget() {
         Item(w.icon, "${w.tempC}° ${w.label}", s)
     }
 
-    /** Ikona i tekst w systemowej czcionce, z odstępem za sobą. */
+    /** Ikona i tekst w systemowej czcionce, z odstępem za sobą (oprócz ostatniego). */
     @Composable
-    private fun Item(icon: Int, text: String, s: WidgetStyle) {
+    private fun Item(icon: Int, text: String, s: WidgetStyle, last: Boolean = false) {
         ItemIcon(icon, s)
         Text(text = text, maxLines = 1, style = sans(s, 13.5f))
-        Spacer(GlanceModifier.width(14.dp))
+        if (!last) Spacer(GlanceModifier.width(14.dp))
+    }
+
+    /**
+     * Półprzezroczysta pigułka pod drobnym tekstem, żeby był czytelny na jasnej
+     * tapecie (Glance nie robi cieni tekstu). Ciemna w trybie ciemnym, jasna w jasnym.
+     */
+    @Composable
+    private fun Scrim(content: @Composable () -> Unit) {
+        Column(
+            modifier = GlanceModifier
+                .cornerRadius(14.dp)
+                .background(SCRIM)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+        ) { content() }
     }
 
     @Composable
@@ -241,7 +259,7 @@ class BatteryWidget : GlanceAppWidget() {
             provider = ImageProvider(icon),
             contentDescription = null,
             modifier = GlanceModifier.size((15 * s.text.scale).dp),
-            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
         )
         Spacer(GlanceModifier.width(6.dp))
     }
@@ -275,5 +293,6 @@ class BatteryWidget : GlanceAppWidget() {
     private fun sans(s: WidgetStyle, size: Float) = TextStyle(
         color = GlanceTheme.colors.onSurface,
         fontSize = (size * s.text.scale).sp,
+        fontWeight = FontWeight.Medium,
     )
 }
