@@ -102,31 +102,31 @@ class BatteryWidget : GlanceAppWidget() {
             modifier = GlanceModifier.fillMaxSize().appWidgetBackground(),
         ) {
             Column(
-                modifier = GlanceModifier.fillMaxSize().padding(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 10.dp),
+                modifier = GlanceModifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp),
                 verticalAlignment = Alignment.Top,
             ) {
                 when {
                     size.width < MEDIUM.width -> {
-                        BigPercent(phone, s, capDp = 24f)
-                        Spacer(GlanceModifier.height(6.dp))
+                        BigPercent(phone, s, capDp = 34f)
+                        Spacer(GlanceModifier.height(8.dp))
                         Bar(phone, s)
-                        Spacer(GlanceModifier.height(6.dp))
+                        Spacer(GlanceModifier.height(8.dp))
                         if (phone.remainingMs != null) Scrim {
                             Row(verticalAlignment = Alignment.CenterVertically) { TimeItem(phone, s, short = true) }
                         }
                     }
                     size.height < LARGE.height -> {
-                        BigPercent(phone, s, capDp = 26f)
-                        Spacer(GlanceModifier.height(6.dp))
+                        BigPercent(phone, s, capDp = 44f)
+                        Spacer(GlanceModifier.height(10.dp))
                         Bar(phone, s)
-                        Spacer(GlanceModifier.height(8.dp))
+                        Spacer(GlanceModifier.height(10.dp))
                         BottomRow(d, phone, s, clockSp = 26f, devices = false)
                     }
                     else -> {
-                        BigPercent(phone, s, capDp = 34f)
-                        Spacer(GlanceModifier.height(8.dp))
+                        BigPercent(phone, s, capDp = 58f)
+                        Spacer(GlanceModifier.height(12.dp))
                         Bar(phone, s)
-                        Spacer(GlanceModifier.height(10.dp))
+                        Spacer(GlanceModifier.height(12.dp))
                         BottomRow(d, phone, s, clockSp = 32f, devices = true)
                     }
                 }
@@ -176,7 +176,7 @@ class BatteryWidget : GlanceAppWidget() {
             TextImage(b.percent?.toString() ?: "--", R.font.inter_tight_bold, capPx, density, if (low) c.error else c.primary)
             TextImage("%", R.font.inter_tight_extralight, capPx, density, c.onSurface)
             if (b.charging) {
-                Spacer(GlanceModifier.width(4.dp))
+                Spacer(GlanceModifier.width(6.dp))
                 Image(
                     provider = ImageProvider(R.drawable.ic_bolt),
                     contentDescription = "ładuje się",
@@ -244,8 +244,8 @@ class BatteryWidget : GlanceAppWidget() {
     @Composable
     private fun Item(icon: Int, text: String, s: WidgetStyle, last: Boolean = false) {
         ItemIcon(icon, s)
-        Text(text = text, maxLines = 1, style = sans(s, 11.5f))
-        if (!last) Spacer(GlanceModifier.width(10.dp))
+        Text(text = text, maxLines = 1, style = sans(s, 13.5f))
+        if (!last) Spacer(GlanceModifier.width(14.dp))
     }
 
     /**
@@ -256,9 +256,9 @@ class BatteryWidget : GlanceAppWidget() {
     private fun Scrim(content: @Composable () -> Unit) {
         Column(
             modifier = GlanceModifier
-                .cornerRadius(12.dp)
+                .cornerRadius(14.dp)
                 .background(SCRIM)
-                .padding(horizontal = 8.dp, vertical = 5.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
         ) { content() }
     }
 
@@ -267,10 +267,10 @@ class BatteryWidget : GlanceAppWidget() {
         Image(
             provider = ImageProvider(icon),
             contentDescription = null,
-            modifier = GlanceModifier.size((12 * s.text.scale).dp),
+            modifier = GlanceModifier.size((15 * s.text.scale).dp),
             colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
         )
-        Spacer(GlanceModifier.width(4.dp))
+        Spacer(GlanceModifier.width(6.dp))
     }
 
     /**
