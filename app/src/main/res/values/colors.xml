@@ -1,0 +1,4 @@
+<resources>
+    <!-- Odpowiednik onSurface z dynamicznej palety (do widoków RemoteViews poza Glance). -->
+    <color name="widget_text">@android:color/system_neutral1_900</color>
+</resources>

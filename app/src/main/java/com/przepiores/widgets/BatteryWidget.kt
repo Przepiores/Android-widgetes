@@ -1,6 +1,8 @@
 package com.przepiores.widgets
 
 import android.content.Context
+import android.util.TypedValue
+import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -17,6 +19,7 @@ import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalSize
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
@@ -52,7 +55,6 @@ private val SCRIM = ColorProvider(day = Color.White.copy(alpha = 0.55f), night =
 
 data class WidgetData(
     val batteries: List<BatteryInfo>,
-    val event: NextEvent?,
     val alarm: String?,
     val weather: Weather?,
 ) {
@@ -60,7 +62,6 @@ data class WidgetData(
         fun load(context: Context) = WidgetData(
             batteries = listOf(BatteryRepository.phone(context)) +
                 BatteryRepository.bluetoothDevices(context).filter { it.kind != DeviceKind.WATCH },
-            event = CalendarRepository.next(context),
             alarm = AlarmRepository.next(context),
             weather = WeatherRepository.cached(context),
         )
@@ -115,7 +116,7 @@ class BatteryWidget : GlanceAppWidget() {
                         }
                     }
                     size.height < LARGE.height -> {
-                        BigPercent(phone, s, capDp = 44f)
+                        TopRow(phone, s, capDp = 44f, clockSp = 34f)
                         Spacer(GlanceModifier.height(10.dp))
                         Bar(phone, s)
                         Spacer(GlanceModifier.height(10.dp))
@@ -128,7 +129,7 @@ class BatteryWidget : GlanceAppWidget() {
                         }
                     }
                     else -> {
-                        BigPercent(phone, s, capDp = 58f)
+                        TopRow(phone, s, capDp = 58f, clockSp = 44f)
                         Spacer(GlanceModifier.height(12.dp))
                         Bar(phone, s)
                         Spacer(GlanceModifier.height(12.dp))
@@ -136,19 +137,34 @@ class BatteryWidget : GlanceAppWidget() {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 TimeItem(phone, s)
                                 WeatherItem(d.weather, s)
-                                d.batteries.drop(1).take(2).forEach { b ->
-                                    b.percent?.let { Item(b.kind.icon, "$it%", s) }
-                                }
+                                d.alarm?.let { Item(R.drawable.ic_alarm, it, s, last = true) }
                             }
-                            Spacer(GlanceModifier.height(6.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                d.alarm?.let { Item(R.drawable.ic_alarm, it, s) }
-                                d.event?.let { Item(R.drawable.ic_event, "${it.whenText}  ${it.title}", s, last = true) }
+                            val devices = d.batteries.drop(1).take(3)
+                            if (devices.any { it.percent != null }) {
+                                Spacer(GlanceModifier.height(6.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    devices.forEach { b -> b.percent?.let { Item(b.kind.icon, "$it%", s) } }
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+    }
+
+    /** Wielki procent po lewej, zegar z datą po prawej, wyrównane do dołu. */
+    @Composable
+    private fun TopRow(phone: BatteryInfo, s: WidgetStyle, capDp: Float, clockSp: Float) {
+        val context = LocalContext.current
+        val clock = RemoteViews(context.packageName, R.layout.widget_clock).apply {
+            setTextViewTextSize(R.id.clock_time, TypedValue.COMPLEX_UNIT_SP, clockSp * s.text.scale)
+            setTextViewTextSize(R.id.clock_date, TypedValue.COMPLEX_UNIT_SP, 13f * s.text.scale)
+        }
+        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            BigPercent(phone, s, capDp)
+            Spacer(GlanceModifier.defaultWeight())
+            AndroidRemoteViews(remoteViews = clock)
         }
     }
 

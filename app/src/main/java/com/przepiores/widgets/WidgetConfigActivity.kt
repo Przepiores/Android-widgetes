@@ -199,6 +199,7 @@ private fun WidgetPreview(s: WidgetStyle) {
                 .background(bg.copy(alpha = s.opacity))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
+            Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = cs.primary, fontWeight = FontWeight.Bold)) { append("58") }
@@ -209,6 +210,19 @@ private fun WidgetPreview(s: WidgetStyle) {
                 letterSpacing = (-0.045).em,
                 lineHeight = (62 * s.text.scale).sp,
             )
+                Spacer(Modifier.weight(1f))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "19:42",
+                        color = cs.onSurface,
+                        fontFamily = inter,
+                        fontWeight = FontWeight.ExtraLight,
+                        fontSize = (44 * s.text.scale).sp,
+                        lineHeight = (44 * s.text.scale).sp,
+                    )
+                    Text("pon., 19 paź", color = cs.onSurface, fontWeight = FontWeight.Bold, fontSize = (13 * s.text.scale).sp)
+                }
+            }
             Spacer(Modifier.height(10.dp))
             Box(
                 Modifier.fillMaxWidth().height(s.ring.barDp.dp).clip(RoundedCornerShape(50))

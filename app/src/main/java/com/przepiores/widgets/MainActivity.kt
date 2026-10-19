@@ -31,10 +31,6 @@ class MainActivity : Activity() {
             setOnClickListener { requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1) }
         })
         root.addView(Button(this).apply {
-            text = "Kalendarz (następne wydarzenie)"
-            setOnClickListener { requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 2) }
-        })
-        root.addView(Button(this).apply {
             text = "Lokalizacja (pogoda)"
             setOnClickListener { requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 3) }
         })
