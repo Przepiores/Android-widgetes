@@ -14,13 +14,13 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
-import androidx.glance.background
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -34,8 +34,6 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
-import androidx.glance.text.FontFamily
-import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
@@ -54,7 +52,6 @@ data class WidgetData(
 ) {
     companion object {
         fun load(context: Context) = WidgetData(
-            // Zamiast zegarków po prawej jest kafelek pogody.
             batteries = listOf(BatteryRepository.phone(context)) +
                 BatteryRepository.bluetoothDevices(context).filter { it.kind != DeviceKind.WATCH },
             event = CalendarRepository.next(context),
@@ -90,205 +87,163 @@ class BatteryWidget : GlanceAppWidget() {
     @Composable
     private fun Content(d: WidgetData, s: WidgetStyle) {
         val size = LocalSize.current
+        val phone = d.batteries.first()
         TintedBox(
             color = GlanceTheme.colors.widgetBackground,
             opacity = s.opacity,
             corner = s.cornerDp.dp,
             modifier = GlanceModifier.fillMaxSize().appWidgetBackground(),
         ) {
-            Column(modifier = GlanceModifier.fillMaxSize().padding(12.dp)) {
+            Column(
+                modifier = GlanceModifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 when {
-                    size.width < MEDIUM.width -> SmallBody(d.batteries.first(), s)
+                    size.width < MEDIUM.width -> {
+                        BigPercent(phone, s, capDp = 34f)
+                        Spacer(GlanceModifier.height(8.dp))
+                        Bar(phone, s)
+                        Spacer(GlanceModifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) { TimeItem(phone, s, short = true) }
+                    }
                     size.height < LARGE.height -> {
-                        RingsRow(d.batteries.take(2), d.weather, s, ring = 44.dp)
-                        Spacer(GlanceModifier.defaultWeight())
-                        InfoLine(d, s, withAlarm = true)
+                        BigPercent(phone, s, capDp = 44f)
+                        Spacer(GlanceModifier.height(10.dp))
+                        Bar(phone, s)
+                        Spacer(GlanceModifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TimeItem(phone, s)
+                            WeatherItem(d.weather, s)
+                            d.alarm?.let { Item(R.drawable.ic_alarm, it, s) }
+                        }
                     }
                     else -> {
-                        RingsRow(d.batteries.take(3), d.weather, s, ring = 60.dp)
-                        Spacer(GlanceModifier.height(6.dp))
-                        InfoLine(d, s, withAlarm = false)
-                        Spacer(GlanceModifier.defaultWeight())
-                        Chip(
-                            R.drawable.ic_event,
-                            d.event?.let { "${it.whenText}  ${it.title}" } ?: "brak wydarzeń",
-                            s,
-                        )
-                        Spacer(GlanceModifier.height(6.dp))
-                        Chip(R.drawable.ic_alarm, d.alarm ?: "brak budzika", s)
+                        BigPercent(phone, s, capDp = 58f)
+                        Spacer(GlanceModifier.height(12.dp))
+                        Bar(phone, s)
+                        Spacer(GlanceModifier.height(12.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            TimeItem(phone, s)
+                            WeatherItem(d.weather, s)
+                            d.batteries.drop(1).take(2).forEach { b ->
+                                b.percent?.let { Item(b.kind.icon, "$it%", s) }
+                            }
+                        }
+                        Spacer(GlanceModifier.height(8.dp))
+                        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            d.alarm?.let { Item(R.drawable.ic_alarm, it, s) }
+                            d.event?.let {
+                                ItemIcon(R.drawable.ic_event, s)
+                                Text(
+                                    text = "${it.whenText}  ${it.title}",
+                                    maxLines = 1,
+                                    modifier = GlanceModifier.defaultWeight(),
+                                    style = sans(s, 13.5f),
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
+    /**
+     * Wielki procent w Inter Tight: liczba grubo (700) w kolorze akcentu,
+     * znak % cienko (200). Rysowane jako bitmapy, bo Glance nie ładuje własnych czcionek.
+     */
     @Composable
-    private fun SmallBody(b: BatteryInfo, s: WidgetStyle) {
-        Column(
-            modifier = GlanceModifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Ring(b, s, ring = 48.dp)
-            b.remainingMs?.let {
-                Text(text = TimeEstimator.format(it), style = mono(s, 11f, GlanceTheme.colors.onSurfaceVariant))
-            }
-        }
-    }
-
-    @Composable
-    private fun RingsRow(items: List<BatteryInfo>, weather: Weather?, s: WidgetStyle, ring: Dp) {
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            items.forEach { b ->
-                Box(modifier = GlanceModifier.defaultWeight(), contentAlignment = Alignment.Center) {
-                    Ring(b, s, ring)
-                }
-            }
-            Box(modifier = GlanceModifier.defaultWeight(), contentAlignment = Alignment.Center) {
-                WeatherTile(weather, s, ring)
-            }
-        }
-    }
-
-    /** Kafelek pogody tej wielkości co pierścień: ikona warunków i temperatura pod spodem. */
-    @Composable
-    private fun WeatherTile(w: Weather?, s: WidgetStyle, ring: Dp) {
+    private fun BigPercent(b: BatteryInfo, s: WidgetStyle, capDp: Float) {
         val c = GlanceTheme.colors
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = GlanceModifier.size(ring).cornerRadius(ring / 2).background(c.secondaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Image(
-                    provider = ImageProvider(w?.icon ?: R.drawable.ic_w_cloud),
-                    contentDescription = w?.label ?: "pogoda",
-                    modifier = GlanceModifier.size(ring * 0.5f),
-                    colorFilter = ColorFilter.tint(c.onSecondaryContainer),
-                )
-            }
-            Spacer(GlanceModifier.height(3.dp))
-            Text(
-                text = w?.let { "${it.tempC}°" } ?: "--°",
-                style = mono(s, 13f, c.onSurface, FontWeight.Bold),
-            )
-        }
-    }
-
-    /** Pierścień z ikoną urządzenia w środku i procentem pod spodem. */
-    @Composable
-    private fun Ring(b: BatteryInfo, s: WidgetStyle, ring: Dp) {
-        val c = GlanceTheme.colors
+        val context = LocalContext.current
+        val density = context.resources.displayMetrics.density
+        val capPx = (capDp * s.text.scale * density).toInt()
         val low = b.percent != null && b.percent < LOW_BATTERY && !b.charging
-        val accent = if (low) c.error else c.primary
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = GlanceModifier.size(ring), contentAlignment = Alignment.Center) {
-                Image(
-                    provider = ImageProvider(RingRenderer.arc(100, s.ring.fraction)),
-                    contentDescription = null,
-                    modifier = GlanceModifier.fillMaxSize(),
-                    colorFilter = ColorFilter.tint(c.secondaryContainer),
-                )
-                Image(
-                    provider = ImageProvider(RingRenderer.arc(b.percent ?: 0, s.ring.fraction)),
-                    contentDescription = null,
-                    modifier = GlanceModifier.fillMaxSize(),
-                    colorFilter = ColorFilter.tint(accent),
-                )
-                Image(
-                    provider = ImageProvider(b.kind.icon),
-                    contentDescription = b.label,
-                    modifier = GlanceModifier.size(ring * 0.4f),
-                    colorFilter = ColorFilter.tint(accent),
-                )
-                if (b.charging) ChargingBadge(ring)
-            }
-            Spacer(GlanceModifier.height(3.dp))
-            Text(
-                text = b.percent?.let { "$it%" } ?: "--",
-                style = mono(s, 13f, c.onSurface, FontWeight.Bold),
-            )
-        }
-    }
-
-    /** Kółko w kolorze primary z błyskawicą, w prawym dolnym rogu pierścienia. */
-    @Composable
-    private fun ChargingBadge(ring: Dp) {
-        val c = GlanceTheme.colors
-        Box(modifier = GlanceModifier.fillMaxSize(), contentAlignment = Alignment.BottomEnd) {
-            Box(
-                modifier = GlanceModifier.size(ring * 0.38f).cornerRadius(ring * 0.19f).background(c.primary),
-                contentAlignment = Alignment.Center,
-            ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextImage(b.percent?.toString() ?: "--", R.font.inter_tight_bold, capPx, density, if (low) c.error else c.primary)
+            TextImage("%", R.font.inter_tight_extralight, capPx, density, c.onSurface)
+            if (b.charging) {
+                Spacer(GlanceModifier.width(6.dp))
                 Image(
                     provider = ImageProvider(R.drawable.ic_bolt),
                     contentDescription = "ładuje się",
-                    modifier = GlanceModifier.size(ring * 0.26f),
-                    colorFilter = ColorFilter.tint(c.onPrimary),
+                    modifier = GlanceModifier.size((capDp * s.text.scale * 0.55f).dp),
+                    colorFilter = ColorFilter.tint(c.primary),
                 )
             }
         }
     }
 
-    /** Czas do naładowania/rozładowania telefonu, opcjonalnie z budzikiem. */
     @Composable
-    private fun InfoLine(d: WidgetData, s: WidgetStyle, withAlarm: Boolean) {
-        val phone = d.batteries.first()
-        val time = phone.remainingMs?.let {
-            (if (phone.charging) "pełna za " else "zostało ") + TimeEstimator.format(it)
-        }
-        val alarm = if (withAlarm) d.alarm else null
-        if (time == null && alarm == null) return
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            time?.let { IconText(R.drawable.ic_timer, it, s) }
-            if (time != null && alarm != null) Spacer(GlanceModifier.width(12.dp))
-            alarm?.let { IconText(R.drawable.ic_alarm, it, s) }
+    private fun TextImage(text: String, font: Int, capPx: Int, density: Float, color: ColorProvider) {
+        val bmp = RingRenderer.text(LocalContext.current, text, font, capPx)
+        Image(
+            provider = ImageProvider(bmp),
+            contentDescription = text,
+            modifier = GlanceModifier.width((bmp.width / density).dp).height((bmp.height / density).dp),
+            contentScale = ContentScale.FillBounds,
+            colorFilter = ColorFilter.tint(color),
+        )
+    }
+
+    /** Cienka linia postępu: tło w tonie motywu, wypełnienie w kolorze akcentu. */
+    @Composable
+    private fun Bar(b: BatteryInfo, s: WidgetStyle) {
+        val c = GlanceTheme.colors
+        val low = b.percent != null && b.percent < LOW_BATTERY && !b.charging
+        Box(modifier = GlanceModifier.fillMaxWidth().height(s.ring.barDp.dp)) {
+            Image(
+                provider = ImageProvider(RingRenderer.bar(100)),
+                contentDescription = null,
+                modifier = GlanceModifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
+                colorFilter = ColorFilter.tint(c.secondaryContainer),
+            )
+            Image(
+                provider = ImageProvider(RingRenderer.bar(b.percent ?: 0)),
+                contentDescription = null,
+                modifier = GlanceModifier.fillMaxSize(),
+                contentScale = ContentScale.FillBounds,
+                colorFilter = ColorFilter.tint(if (low) c.error else c.primary),
+            )
         }
     }
 
     @Composable
-    private fun IconText(icon: Int, text: String, s: WidgetStyle) {
-        val color = GlanceTheme.colors.onSurfaceVariant
+    private fun TimeItem(phone: BatteryInfo, s: WidgetStyle, short: Boolean = false) {
+        val ms = phone.remainingMs ?: return
+        val time = TimeEstimator.format(ms)
+        val text = when {
+            short -> time
+            phone.charging -> "pełna za $time"
+            else -> time
+        }
+        Item(R.drawable.ic_timer, text, s)
+    }
+
+    @Composable
+    private fun WeatherItem(w: Weather?, s: WidgetStyle) {
+        w ?: return
+        Item(w.icon, "${w.tempC}° ${w.label}", s)
+    }
+
+    /** Ikona i tekst w systemowej czcionce, z odstępem za sobą. */
+    @Composable
+    private fun Item(icon: Int, text: String, s: WidgetStyle) {
+        ItemIcon(icon, s)
+        Text(text = text, maxLines = 1, style = sans(s, 13.5f))
+        Spacer(GlanceModifier.width(14.dp))
+    }
+
+    @Composable
+    private fun ItemIcon(icon: Int, s: WidgetStyle) {
         Image(
             provider = ImageProvider(icon),
             contentDescription = null,
-            modifier = GlanceModifier.size((12 * s.text.scale).dp),
-            colorFilter = ColorFilter.tint(color),
+            modifier = GlanceModifier.size((15 * s.text.scale).dp),
+            colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurfaceVariant),
         )
-        Spacer(GlanceModifier.width(4.dp))
-        Text(text = text, maxLines = 1, style = mono(s, 11f, color))
-    }
-
-    @Composable
-    private fun Chip(icon: Int, text: String, s: WidgetStyle) {
-        val c = GlanceTheme.colors
-        // Przy przezroczystym widgecie "pigułki" zostają lekko widoczne.
-        TintedBox(
-            color = c.secondaryContainer,
-            opacity = 0.4f + 0.6f * s.opacity,
-            corner = (s.cornerDp * 2 / 3).dp,
-            modifier = GlanceModifier.fillMaxWidth(),
-        ) {
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().padding(vertical = 7.dp, horizontal = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Image(
-                    provider = ImageProvider(icon),
-                    contentDescription = null,
-                    modifier = GlanceModifier.size((15 * s.text.scale).dp),
-                    colorFilter = ColorFilter.tint(c.onSecondaryContainer),
-                )
-                Spacer(GlanceModifier.width(8.dp))
-                Text(text = text, maxLines = 1, style = mono(s, 12f, c.onSecondaryContainer))
-            }
-        }
+        Spacer(GlanceModifier.width(6.dp))
     }
 
     /**
@@ -315,15 +270,10 @@ class BatteryWidget : GlanceAppWidget() {
         }
     }
 
-    private fun mono(
-        s: WidgetStyle,
-        size: Float,
-        color: ColorProvider,
-        weight: FontWeight = FontWeight.Normal,
-    ) = TextStyle(
-        color = color,
+    /** Drobny tekst w czcionce systemowej (na Samsungu: One UI Sans). */
+    @Composable
+    private fun sans(s: WidgetStyle, size: Float) = TextStyle(
+        color = GlanceTheme.colors.onSurface,
         fontSize = (size * s.text.scale).sp,
-        fontWeight = weight,
-        fontFamily = FontFamily.Monospace,
     )
 }

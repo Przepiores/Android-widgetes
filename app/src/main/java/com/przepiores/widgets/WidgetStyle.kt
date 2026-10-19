@@ -7,10 +7,11 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 
-enum class RingThickness(val label: String, val fraction: Float) {
-    THIN("Cienkie", 0.07f),
-    NORMAL("Normalne", 0.11f),
-    THICK("Grube", 0.16f),
+/** Grubość paska baterii (nazwa enuma zostaje, bo jest zapisana w ustawieniach widgetów). */
+enum class RingThickness(val label: String, val barDp: Int) {
+    THIN("Cienki", 3),
+    NORMAL("Normalny", 5),
+    THICK("Gruby", 8),
 }
 
 enum class TextSize(val label: String, val scale: Float) {
@@ -22,7 +23,7 @@ enum class TextSize(val label: String, val scale: Float) {
 /** Ustawienia wyglądu jednego widgetu, trzymane w jego stanie Glance. */
 data class WidgetStyle(
     /** Krycie tła: 0 = całkiem przezroczyste, 1 = pełne. */
-    val opacity: Float = 0.75f,
+    val opacity: Float = 0f,
     val cornerDp: Int = 24,
     val ring: RingThickness = RingThickness.NORMAL,
     val text: TextSize = TextSize.NORMAL,
@@ -44,7 +45,7 @@ data class WidgetStyle(
         val TICK = longPreferencesKey("tick")
 
         fun from(p: Preferences) = WidgetStyle(
-            opacity = p[OPACITY] ?: 0.75f,
+            opacity = p[OPACITY] ?: 0f,
             cornerDp = p[CORNER] ?: 24,
             ring = p[RING]?.let { n -> RingThickness.entries.firstOrNull { it.name == n } }
                 ?: RingThickness.NORMAL,

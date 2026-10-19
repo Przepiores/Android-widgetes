@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,12 +21,10 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -46,14 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -139,7 +137,7 @@ private fun ConfigScreen(style: WidgetStyle, onChange: (WidgetStyle) -> Unit, on
             steps = 7,
         )
 
-        Label("Grubość pierścieni", null)
+        Label("Grubość paska", null)
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             RingThickness.entries.forEachIndexed { i, t ->
                 SegmentedButton(
@@ -182,74 +180,49 @@ private fun WidgetPreview(s: WidgetStyle) {
     val bg = colorResource(
         if (isSystemInDarkTheme()) android.R.color.system_accent2_800 else android.R.color.system_accent2_50,
     )
+    val inter = FontFamily(
+        Font(R.font.inter_tight_bold, FontWeight.Bold),
+        Font(R.font.inter_tight_extralight, FontWeight.ExtraLight),
+    )
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(170.dp)
+            .height(190.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Brush.linearGradient(listOf(cs.tertiary, cs.primary, cs.secondary))),
         contentAlignment = Alignment.Center,
     ) {
-        Row(
+        Column(
             modifier = Modifier
-                .width(260.dp)
+                .width(280.dp)
                 .clip(RoundedCornerShape(s.cornerDp.dp))
                 .background(bg.copy(alpha = s.opacity))
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            PreviewRing(72, R.drawable.ic_phone, s)
-            PreviewRing(15, R.drawable.ic_headphones, s)
-            PreviewWeather(s)
-        }
-    }
-}
-
-@Composable
-private fun PreviewWeather(s: WidgetStyle) {
-    val cs = MaterialTheme.colorScheme
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier.size(56.dp).clip(CircleShape).background(cs.secondaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_w_partly), contentDescription = null, tint = cs.onSecondaryContainer, modifier = Modifier.size(28.dp))
-        }
-        Spacer(Modifier.height(3.dp))
-        Text(
-            "14°",
-            color = cs.onSurface,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = (13 * s.text.scale).sp,
-        )
-    }
-}
-
-@Composable
-private fun PreviewRing(pct: Int, icon: Int, s: WidgetStyle) {
-    val cs = MaterialTheme.colorScheme
-    val accent = if (pct < 20) cs.error else cs.primary
-    val track = cs.secondaryContainer
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.minDimension * s.ring.fraction
-                val topLeft = Offset(w / 2, w / 2)
-                val arcSize = Size(size.width - w, size.height - w)
-                val stroke = Stroke(width = w, cap = StrokeCap.Round)
-                drawArc(track, -90f, 360f, false, topLeft, arcSize, style = stroke)
-                drawArc(accent, -90f, 360f * pct / 100, false, topLeft, arcSize, style = stroke)
+            Text(
+                buildAnnotatedString {
+                    withStyle(SpanStyle(color = cs.primary, fontWeight = FontWeight.Bold)) { append("58") }
+                    withStyle(SpanStyle(color = cs.onSurface, fontWeight = FontWeight.ExtraLight)) { append("%") }
+                },
+                fontFamily = inter,
+                fontSize = (62 * s.text.scale).sp,
+                letterSpacing = (-0.045).em,
+                lineHeight = (62 * s.text.scale).sp,
+            )
+            Spacer(Modifier.height(10.dp))
+            Box(
+                Modifier.fillMaxWidth().height(s.ring.barDp.dp).clip(RoundedCornerShape(50))
+                    .background(cs.secondaryContainer),
+            ) {
+                Box(Modifier.fillMaxWidth(0.58f).fillMaxHeight().clip(RoundedCornerShape(50)).background(cs.primary))
             }
-            Icon(painterResource(icon), contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "6h 20m    9° pochmurno    07:00",
+                color = cs.onSurface,
+                fontSize = (13.5f * s.text.scale).sp,
+                maxLines = 1,
+            )
         }
-        Spacer(Modifier.height(3.dp))
-        Text(
-            "$pct%",
-            color = cs.onSurface,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = (13 * s.text.scale).sp,
-        )
     }
 }
