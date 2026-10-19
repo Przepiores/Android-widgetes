@@ -2,6 +2,8 @@ name: Build APK
 on:
   push:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,7 +15,16 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: 9.6.0 }
       - run: gradle assembleDebug --no-daemon --stacktrace
+      - run: cp app/build/outputs/apk/debug/app-debug.apk widgety-baterii.apk
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: widgety-baterii.apk
+      # Każdy build jako wydanie z plikiem APK: stały link .../releases/latest/download/widgety-baterii.apk
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Widgety baterii (build ${{ github.run_number }})
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: widgety-baterii.apk
