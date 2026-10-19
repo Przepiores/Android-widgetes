@@ -102,67 +102,60 @@ class BatteryWidget : GlanceAppWidget() {
             modifier = GlanceModifier.fillMaxSize().appWidgetBackground(),
         ) {
             Column(
-                modifier = GlanceModifier.fillMaxSize().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 12.dp),
+                modifier = GlanceModifier.fillMaxSize().padding(start = 14.dp, end = 14.dp, top = 6.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.Top,
             ) {
                 when {
                     size.width < MEDIUM.width -> {
-                        BigPercent(phone, s, capDp = 34f)
-                        Spacer(GlanceModifier.height(8.dp))
+                        BigPercent(phone, s, capDp = 24f)
+                        Spacer(GlanceModifier.height(6.dp))
                         Bar(phone, s)
-                        Spacer(GlanceModifier.height(8.dp))
+                        Spacer(GlanceModifier.height(6.dp))
                         if (phone.remainingMs != null) Scrim {
                             Row(verticalAlignment = Alignment.CenterVertically) { TimeItem(phone, s, short = true) }
                         }
                     }
                     size.height < LARGE.height -> {
-                        TopRow(phone, s, capDp = 44f, clockSp = 34f)
-                        Spacer(GlanceModifier.height(10.dp))
+                        BigPercent(phone, s, capDp = 26f)
+                        Spacer(GlanceModifier.height(6.dp))
                         Bar(phone, s)
-                        Spacer(GlanceModifier.height(10.dp))
-                        Scrim {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                TimeItem(phone, s)
-                                WeatherItem(d.weather, s)
-                                d.alarm?.let { Item(R.drawable.ic_alarm, it, s, last = true) }
-                            }
-                        }
+                        Spacer(GlanceModifier.height(8.dp))
+                        BottomRow(d, phone, s, clockSp = 26f, devices = false)
                     }
                     else -> {
-                        TopRow(phone, s, capDp = 58f, clockSp = 44f)
-                        Spacer(GlanceModifier.height(12.dp))
+                        BigPercent(phone, s, capDp = 34f)
+                        Spacer(GlanceModifier.height(8.dp))
                         Bar(phone, s)
-                        Spacer(GlanceModifier.height(12.dp))
-                        Scrim {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                TimeItem(phone, s)
-                                WeatherItem(d.weather, s)
-                                d.alarm?.let { Item(R.drawable.ic_alarm, it, s, last = true) }
-                            }
-                            val devices = d.batteries.drop(1).take(3)
-                            if (devices.any { it.percent != null }) {
-                                Spacer(GlanceModifier.height(6.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    devices.forEach { b -> b.percent?.let { Item(b.kind.icon, "$it%", s) } }
-                                }
-                            }
-                        }
+                        Spacer(GlanceModifier.height(10.dp))
+                        BottomRow(d, phone, s, clockSp = 32f, devices = true)
                     }
                 }
             }
         }
     }
 
-    /** Wielki procent po lewej, zegar z datą po prawej, wyrównane do dołu. */
+    /** Pod paskiem: pigułka z informacjami po lewej, zegar z datą w prawym rogu. */
     @Composable
-    private fun TopRow(phone: BatteryInfo, s: WidgetStyle, capDp: Float, clockSp: Float) {
+    private fun BottomRow(d: WidgetData, phone: BatteryInfo, s: WidgetStyle, clockSp: Float, devices: Boolean) {
         val context = LocalContext.current
         val clock = RemoteViews(context.packageName, R.layout.widget_clock).apply {
             setTextViewTextSize(R.id.clock_time, TypedValue.COMPLEX_UNIT_SP, clockSp * s.text.scale)
-            setTextViewTextSize(R.id.clock_date, TypedValue.COMPLEX_UNIT_SP, 13f * s.text.scale)
+            setTextViewTextSize(R.id.clock_date, TypedValue.COMPLEX_UNIT_SP, 11f * s.text.scale)
         }
         Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-            BigPercent(phone, s, capDp)
+            Scrim {
+                if (phone.remainingMs != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                    TimeItem(phone, s, last = true)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    WeatherItem(d.weather, s, last = d.alarm == null)
+                    d.alarm?.let { Item(R.drawable.ic_alarm, it, s, last = true) }
+                }
+                val bt = d.batteries.drop(1).take(3).filter { it.percent != null }
+                if (devices && bt.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+                    bt.forEachIndexed { i, b -> Item(b.kind.icon, "${b.percent}%", s, last = i == bt.lastIndex) }
+                }
+            }
             Spacer(GlanceModifier.defaultWeight())
             AndroidRemoteViews(remoteViews = clock)
         }
@@ -183,7 +176,7 @@ class BatteryWidget : GlanceAppWidget() {
             TextImage(b.percent?.toString() ?: "--", R.font.inter_tight_bold, capPx, density, if (low) c.error else c.primary)
             TextImage("%", R.font.inter_tight_extralight, capPx, density, c.onSurface)
             if (b.charging) {
-                Spacer(GlanceModifier.width(6.dp))
+                Spacer(GlanceModifier.width(4.dp))
                 Image(
                     provider = ImageProvider(R.drawable.ic_bolt),
                     contentDescription = "ładuje się",
@@ -230,7 +223,7 @@ class BatteryWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun TimeItem(phone: BatteryInfo, s: WidgetStyle, short: Boolean = false) {
+    private fun TimeItem(phone: BatteryInfo, s: WidgetStyle, short: Boolean = false, last: Boolean = false) {
         val ms = phone.remainingMs ?: return
         val time = TimeEstimator.format(ms)
         val text = when {
@@ -238,21 +231,21 @@ class BatteryWidget : GlanceAppWidget() {
             phone.charging -> "pełna za $time"
             else -> time
         }
-        Item(R.drawable.ic_timer, text, s)
+        Item(R.drawable.ic_timer, text, s, last)
     }
 
     @Composable
-    private fun WeatherItem(w: Weather?, s: WidgetStyle) {
+    private fun WeatherItem(w: Weather?, s: WidgetStyle, last: Boolean = false) {
         w ?: return
-        Item(w.icon, "${w.tempC}° ${w.label}", s)
+        Item(w.icon, "${w.tempC}° ${w.label}", s, last)
     }
 
     /** Ikona i tekst w systemowej czcionce, z odstępem za sobą (oprócz ostatniego). */
     @Composable
     private fun Item(icon: Int, text: String, s: WidgetStyle, last: Boolean = false) {
         ItemIcon(icon, s)
-        Text(text = text, maxLines = 1, style = sans(s, 13.5f))
-        if (!last) Spacer(GlanceModifier.width(14.dp))
+        Text(text = text, maxLines = 1, style = sans(s, 11.5f))
+        if (!last) Spacer(GlanceModifier.width(10.dp))
     }
 
     /**
@@ -263,9 +256,9 @@ class BatteryWidget : GlanceAppWidget() {
     private fun Scrim(content: @Composable () -> Unit) {
         Column(
             modifier = GlanceModifier
-                .cornerRadius(14.dp)
+                .cornerRadius(12.dp)
                 .background(SCRIM)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
+                .padding(horizontal = 8.dp, vertical = 5.dp),
         ) { content() }
     }
 
@@ -274,10 +267,10 @@ class BatteryWidget : GlanceAppWidget() {
         Image(
             provider = ImageProvider(icon),
             contentDescription = null,
-            modifier = GlanceModifier.size((15 * s.text.scale).dp),
+            modifier = GlanceModifier.size((12 * s.text.scale).dp),
             colorFilter = ColorFilter.tint(GlanceTheme.colors.onSurface),
         )
-        Spacer(GlanceModifier.width(6.dp))
+        Spacer(GlanceModifier.width(4.dp))
     }
 
     /**

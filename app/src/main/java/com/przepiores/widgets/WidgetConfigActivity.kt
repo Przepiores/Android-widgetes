@@ -187,7 +187,7 @@ private fun WidgetPreview(s: WidgetStyle) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(190.dp)
+            .height(160.dp)
             .clip(RoundedCornerShape(20.dp))
             .background(Brush.linearGradient(listOf(cs.tertiary, cs.primary, cs.secondary))),
         contentAlignment = Alignment.Center,
@@ -199,17 +199,30 @@ private fun WidgetPreview(s: WidgetStyle) {
                 .background(bg.copy(alpha = s.opacity))
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            Row(verticalAlignment = Alignment.Bottom) {
             Text(
                 buildAnnotatedString {
                     withStyle(SpanStyle(color = cs.primary, fontWeight = FontWeight.Bold)) { append("58") }
                     withStyle(SpanStyle(color = cs.onSurface, fontWeight = FontWeight.ExtraLight)) { append("%") }
                 },
                 fontFamily = inter,
-                fontSize = (62 * s.text.scale).sp,
+                fontSize = (36 * s.text.scale).sp,
                 letterSpacing = (-0.045).em,
-                lineHeight = (62 * s.text.scale).sp,
+                lineHeight = (36 * s.text.scale).sp,
             )
+            Spacer(Modifier.height(6.dp))
+            Box(
+                Modifier.fillMaxWidth().height(s.ring.barDp.dp).clip(RoundedCornerShape(50))
+                    .background(cs.secondaryContainer),
+            ) {
+                Box(Modifier.fillMaxWidth(0.58f).fillMaxHeight().clip(RoundedCornerShape(50)).background(cs.primary))
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Column {
+                    val small = (11.5f * s.text.scale).sp
+                    Text("6h 20m", color = cs.onSurface, fontSize = small, maxLines = 1)
+                    Text("9° pochmurno   07:00", color = cs.onSurface, fontSize = small, maxLines = 1)
+                }
                 Spacer(Modifier.weight(1f))
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
@@ -217,26 +230,12 @@ private fun WidgetPreview(s: WidgetStyle) {
                         color = cs.onSurface,
                         fontFamily = inter,
                         fontWeight = FontWeight.ExtraLight,
-                        fontSize = (44 * s.text.scale).sp,
-                        lineHeight = (44 * s.text.scale).sp,
+                        fontSize = (26 * s.text.scale).sp,
+                        lineHeight = (26 * s.text.scale).sp,
                     )
-                    Text("pon., 19 paź", color = cs.onSurface, fontWeight = FontWeight.Bold, fontSize = (13 * s.text.scale).sp)
+                    Text("pon., 19 paź", color = cs.onSurface, fontWeight = FontWeight.Bold, fontSize = (11 * s.text.scale).sp)
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Box(
-                Modifier.fillMaxWidth().height(s.ring.barDp.dp).clip(RoundedCornerShape(50))
-                    .background(cs.secondaryContainer),
-            ) {
-                Box(Modifier.fillMaxWidth(0.58f).fillMaxHeight().clip(RoundedCornerShape(50)).background(cs.primary))
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "6h 20m    9° pochmurno    07:00",
-                color = cs.onSurface,
-                fontSize = (13.5f * s.text.scale).sp,
-                maxLines = 1,
-            )
         }
     }
 }
